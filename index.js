@@ -7,7 +7,7 @@ async function openWebPage() {
   const browser = await puppeteer.launch({
     headless: false,
     args: ["--start-maximized"],
-    slowMo: 10,
+    slowMo: 20,
   });
   const page = await browser.newPage();
   const AFIP_URL = process.env.AFIP_URL || "";
@@ -227,6 +227,8 @@ async function confirmBillingPage(page) {
   // return to home
   await page.waitForSelector(principalMenu);
   await page.click(principalMenu);
+
+  await homePage(page);
 }
 
 // Functions to calculate each Row
