@@ -21,6 +21,11 @@ async function openWebPage() {
   // Set the viewport to the screen's dimensions
   await page.setViewport({ width: screenWidth, height: screenHeight });
 
+  // on event listener trigger
+  page.on("dialog", async (dialog) => {
+    await dialog.accept();
+  });
+
   await loginPage(page);
 }
 
@@ -38,14 +43,18 @@ async function loginPage(page) {
   await page.type("#F1\\:password", password);
   await page.click("#F1\\:btnIngresar");
 
-  await homePage(page);
+  await mainPage(page);
 }
 
-async function homePage(page) {
+async function mainPage(page) {
   // Wait for the button and click it
   await page.waitForSelector(".btn_empresa");
   await page.click(".btn_empresa");
 
+  await homePage(page);
+}
+
+async function homePage(page) {
   // Wait for the "Generar Comprobantes" link to become visible and then click it
   await page.waitForSelector("#btn_gen_cmp");
   await page.click("#btn_gen_cmp");
@@ -134,30 +143,156 @@ async function receptorInformationPage(page) {
 
 async function billingPage(page) {
   // First determine how many rows of products we want
-  const rowsQty = 4;
+  const rowsQty = 5;
   const addButtonSelector = 'input[value="Agregar línea descripción"]';
 
   await page.waitForSelector(addButtonSelector);
 
   for (let i = 1; i < rowsQty; i++) {
+    // First calculate the {text, value & price} for each row
+    let rowValues;
+    switch (i) {
+      case 1:
+        rowValues = await lacteos();
+        break;
+      case 2:
+        rowValues = await pastas();
+        break;
+      case 3:
+        rowValues = await panes();
+        break;
+      case 4:
+        rowValues = await quesos();
+        break;
+      default:
+        break;
+    }
+
+    const { text, quantity, selectOption, price, IVACondition } = rowValues;
+
     const textareaSelector = `#detalle_descripcion${i}`; // TextArea
+    const quantityInput = `#detalle_cantidad${i}`; // Quantity
     const selectMeasurement = `#detalle_medida${i}`; // Select
-    // Select the option by its value and text content
-    const optionValue = "7";
-    const optionText = "unidades";
-    const dataToFill = "This is the data I want to fill the textarea with.";
+    const priceInput = `#detalle_precio${i}`; // Price
+    const IVASelect = `#detalle_tipo_iva${i}`; // IVA Percentage
 
+    // Product or service
     await page.waitForSelector(textareaSelector);
-    await page.type(textareaSelector, dataToFill);
+    await page.type(textareaSelector, text);
 
+    // Quantity
+    await page.waitForSelector(quantityInput);
+    await page.$eval(quantityInput, (input) => (input.value = ""));
+    await page.type(quantityInput, quantity.toString());
+
+    // Measurement select
     await page.waitForSelector(selectMeasurement);
-    await page.select(
-      selectMeasurement,
-      `option[label="${optionText}"]`
-    );
+    await page.select(selectMeasurement, selectOption);
 
-    // await page.click(addButtonSelector);
+    // Price
+    await page.waitForSelector(priceInput);
+    await page.type(priceInput, price.toString());
+
+    // IVA Percentage
+    await page.waitForSelector(IVASelect);
+    await page.select(IVASelect, IVACondition);
+
+    if (i < 4) {
+      await page.click(addButtonSelector);
+    }
   }
+
+  const inputValue = await page.evaluate(() => {
+    const inputElement = document.querySelector("#imptotal");
+    return inputElement ? inputElement.value : null;
+  });
+
+  console.log(`Total: $${inputValue}`);
+
+  const continuarButtonSelector = 'input[value="Continuar >"]';
+  await page.waitForSelector(continuarButtonSelector);
+  await page.click(continuarButtonSelector);
+
+  await confirmBillingPage(page);
+}
+
+async function confirmBillingPage(page) {
+  const confirmButton = "#btngenerar";
+  const principalMenu = 'input[value="Menú Principal"]';
+
+  // Confirm billing
+  await page.waitForSelector(confirmButton);
+  await page.click(confirmButton);
+
+  // return to home
+  await page.waitForSelector(principalMenu);
+  await page.click(principalMenu);
+}
+
+// Functions to calculate each Row
+async function lacteos() {
+  const unitsMax = 50;
+  const unitsMin = 36;
+  const priceMax = 370;
+  const priceMin = 305;
+
+  const selectOption = "7"; // Unidades
+  const text = "LACTEOS Y DERIVADOS";
+  const quantity =
+    Math.floor(Math.random() * (unitsMax - unitsMin + 1)) + unitsMin;
+  const price =
+    Math.floor(Math.random() * (priceMax - priceMin + 1)) + priceMin;
+  const IVACondition = "5"; // 21%
+
+  return { text, quantity, selectOption, price, IVACondition };
+}
+async function pastas() {
+  const unitsMax = 26;
+  const unitsMin = 10;
+  const priceMax = 320;
+  const priceMin = 305;
+
+  const selectOption = "7"; // Unidades
+  const text = "PASTAS FRESCAS";
+  const quantity =
+    Math.floor(Math.random() * (unitsMax - unitsMin + 1)) + unitsMin;
+  const price =
+    Math.floor(Math.random() * (priceMax - priceMin + 1)) + priceMin;
+  const IVACondition = "5"; // 21%
+
+  return { text, quantity, selectOption, price, IVACondition };
+}
+async function panes() {
+  const unitsMax = 18;
+  const unitsMin = 5;
+  const priceMax = 320;
+  const priceMin = 305;
+
+  const selectOption = "7"; // Unidades
+  const text = "PANES";
+  const quantity =
+    Math.floor(Math.random() * (unitsMax - unitsMin + 1)) + unitsMin;
+  const price =
+    Math.floor(Math.random() * (priceMax - priceMin + 1)) + priceMin;
+  const IVACondition = "5"; // 21%
+
+  return { text, quantity, selectOption, price, IVACondition };
+}
+async function quesos() {
+  const unitsMax = 7;
+  const unitsMin = 5;
+  const priceMax = 1600;
+  const priceMin = 1350;
+
+  const selectOption = "1"; // Kilogramos
+  const text = "QUESOS Y EMBUTIDOS";
+  const quantity =
+    Math.floor(Math.random() * (unitsMax - unitsMin + 1)) + unitsMin;
+  const price =
+    Math.floor(Math.random() * (priceMax - priceMin + 1)) + priceMin;
+  const IVACondition = "5"; // 21%
+
+  return { text, quantity, selectOption, price, IVACondition };
 }
 
 openWebPage();
