@@ -1,52 +1,31 @@
-import fs from "fs";
+const input = `
+LIPARI WALTER ANTONIO - 39259.55 (01-12)
+CONTRERAS FRANCISCO ANTONIO - 45419.45 (01-12)
+BUZZONE CINTIA ELISABET - 39699.63 (04-12)
+GARCIA PADILLA SANDRO RAFAEL - 41759.30 (04-12)
+27665.00
+33567.00
+31081.00
+31700.00
+27747.00
+28703.00
+30279.00
+31046.00
+32776.00
+35356.00
+29349.00
+34854.00
+33090.00
+29401.00
+`;
 
+// Extract numbers from the input, considering both integers and decimals
+const numbers = input.match(/-?\d+(\.\d+)?/g).map(parseFloat);
 
-function sumarNumerosPorBloque(data) {
-    const bloques = data.split('----').filter(item => item.trim() !== '');
-  
-    for (let i = 0; i < bloques.length; i++) {
-      const bloque = bloques[i].trim();
-      const lines = bloque.split('\n').filter(line => line.trim() !== '');
-  
-      // Skip if lines are less than 2 (name and amount line)
-      if (lines.length < 2) {
-        console.log(`Skipping block ${i + 1} due to incorrect format.`);
-        continue;
-      }
-  
-      const nombre = lines[0];
-      const montoInicial = parseFloat(lines[1].split(' ')[4]);
-      let suma = montoInicial;
-  
-      for (let j = 2; j < lines.length; j++) {
-        const monto = parseFloat(lines[j]);
-        if (!isNaN(monto)) {
-          suma += monto;
-        }
-      }
-  
-      console.log(`Nombre: ${nombre}`);
-      console.log(`Suma del bloque ${i + 1}: ${suma.toFixed(2)}`);
-      console.log('---');
-    }
-  }
-  
-  function leerArchivo(nombreArchivo) {
-    fs.readFile(nombreArchivo, 'utf8', (err, data) => {
-      if (err) {
-        console.error('Error al leer el archivo:', err);
-        return;
-      }
-  
-      sumarNumerosPorBloque(data);
-    });
-  }
-  
-  const args = process.argv.slice(2);
-  if (args.length !== 1) {
-    console.error('Por favor, proporciona la ruta del archivo como argumento.');
-    process.exit(1);
-  }
-  
-  const nombreArchivo = args[0];
-  leerArchivo(nombreArchivo);
+// Function to calculate the sum
+const calculateSum = (numbers) => {
+  return numbers.reduce((sum, number) => sum + number, 0);
+};
+
+// Output the sum
+console.log("The sum is:", calculateSum(numbers));
